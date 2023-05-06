@@ -29,7 +29,7 @@ const getAPIData = async () => {
     champIds.champs.push(e[0])
   })
   gameVersion = versions[0]
-}
+} //selam
 
 const clientConnector = (async() => { 
   while(credentials == undefined) {
