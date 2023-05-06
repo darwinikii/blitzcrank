@@ -1,0 +1,191 @@
+html {
+    user-select: none;
+    -drag: none;
+    overflow: hidden;
+}
+
+body {
+    overflow: hidden;
+    background: #333;
+    display: flex;
+}
+
+.characterSelector {
+    background-color: #1e1e1e;
+    -webkit-text-fill-color: white;
+    border-color: #1e1e1e;
+    margin-top: 5px;
+}
+
+.characterSelector > option {
+    -webkit-text-fill-color: white;
+    color: white;
+}
+
+.characterSelect {
+    display: flex;
+    margin-top: 15px;
+}
+
+.characterSelect > div {
+    margin: auto;
+    display: flex;
+    flex-direction: column;
+}
+
+.characterSelect > div > svg {
+    position: absolute;
+    margin-left: 12.5px;
+    margin-right: 12.5px;
+    z-index: 0;
+}
+
+.characterSelectImage {
+    width: 75px;
+    height: 75px;
+    margin-left: auto;
+    margin-right: auto;
+    z-index: 1;
+}
+
+.characterSelector {
+    width: 100px;
+}
+
+#playerIcon {
+    display: none;
+    position: absolute; 
+    left: 0.75%; 
+    bottom: 2.5%; 
+    border: 5px; 
+    border-radius: 5px;
+    width: 39px;
+    height: 40px;
+    transition: transform .5s ease-in-out;
+}
+
+#playerIcon:hover {
+    transform: rotate(360deg);
+}
+
+#playerIconErr {
+    position: absolute; 
+    left: 0.75%; 
+    bottom: 2.5%; 
+    border: 5px; 
+    border-radius: 5px;
+    width: 39px;
+    height: 40px;
+}
+
+.MainMenu {
+    position: absolute;
+    left: 60px;
+    width: 90%;
+    height: 100%;
+    padding-top: 25px;
+    padding-left: 10px;
+    padding-right: 10px;
+    display: flex;
+    transition: visibility .5s, opacity .5s linear;
+    visibility: visible;
+    opacity: 1;
+}
+
+.Automation {
+    position: absolute;
+    left: 60px;
+    width: 90%;
+    height: 100%;
+    padding-top: 30px;
+    padding-left: 10px;
+    padding-right: 10px;
+    display: table-column;
+    transition: visibility .5s, opacity .5s linear;
+    visibility: visible;
+    opacity: 1;
+    -webkit-text-fill-color: white;
+    overflow-x: auto;
+}
+
+.Automation > div > h1 {
+    font-size: 35;
+}
+
+.Automation > .entry {
+    display: flex;
+    width: 100%;
+    margin-top: 15px;
+}
+
+.Automation > .entry > .start {
+    position: relative;
+    height: 24px;
+    text-align: center;
+    justify-content: center;
+    display: flex;
+}
+
+.Automation > .entry > .end {
+    position: relative;
+    margin-left: auto;
+    height: 24px;
+}
+
+.hidden {
+    visibility: hidden;
+    opacity: 0;
+}
+
+.MainMenu > div > h1 {
+    margin-top: 20px;
+    margin-left: 40px;
+    margin-right: 40px;
+    -webkit-text-fill-color: white;
+}
+
+.MainMenu > div {
+    text-align: center;
+    -webkit-text-fill-color: white;
+}
+
+.dragzone {
+    position: absolute;
+    width: 100%;
+    height: 25px;
+    display: flex;
+    padding-right: 20px;
+    padding-left: 5px;
+    justify-content: right;
+    -webkit-app-region: drag;
+}
+
+.dragzone > .btn {
+    margin-top: 5px;
+    margin-left: 5px;
+    border-radius: 30px;
+    padding: 6px 6px 6px 6px;
+    width: 20px;
+    -webkit-app-region: none;
+    z-index: 999;
+}
+
+.navigation {
+    width: 60px;
+    height: 100%;
+    background: #252526;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: flex-start;
+}
+
+.navigation > * {
+    margin-top: 5px;
+    margin-left: 5px;
+    margin-right: 5px;
+}
+
+img[src=""] {
+    visibility: hidden;
+}

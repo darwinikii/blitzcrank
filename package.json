@@ -1,0 +1,19 @@
+{
+  "name": "blitzcrank",
+  "version": "1.0.0",
+  "description": "",
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "electron": "^24.1.3"
+  },
+  "dependencies": {
+    "bulma-extensions": "^6.2.7",
+    "league-connect": "^6.0.0-rc12"
+  }
+}

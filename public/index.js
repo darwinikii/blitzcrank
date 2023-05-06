@@ -1,0 +1,67 @@
+const { ipcRenderer } = require("electron")
+
+var ver = "13.9.1"
+
+new bootstrap.Tooltip(document.getElementById("playerIcon"))
+new bootstrap.Tooltip(document.getElementById("Logo"))
+new bootstrap.Tooltip(document.getElementById("MainMenuBtn"))
+new bootstrap.Tooltip(document.getElementById("AutomationBtn"))
+new bootstrap.Tooltip(document.getElementById("playerIconErr"))
+
+ipcRenderer.send("run");
+
+ipcRenderer.on("sync", (event, data) => {
+    console.log(data)
+    document.getElementById("readycheck").checked = data.readycheck
+    document.getElementById("inviteaccept").checked = data.inviteaccept
+})
+
+ipcRenderer.on("playerIcon", (event, data) => {
+    if (!data.displayName) { document.getElementById("playerIcon").style.display = "none"; document.getElementById("playerIconErr").style.display = "block"; return }
+    document.getElementById("playerIcon").setAttribute("data-bs-title", data.displayName)
+    document.getElementById("playerIcon").src = "https://ddragon.leagueoflegends.com/cdn/13.8.1/img/profileicon/" + data.profileIconId + ".png"
+    document.getElementById("playerIcon").style.display = "block"
+    document.getElementById("playerIconErr").style.display = "none"
+})
+
+function switchMenu(menu) {
+    document.getElementsByClassName("MainMenu")[0].classList.value = "MainMenu hidden"
+    document.getElementsByClassName("Automation")[0].classList.value= "Automation hidden"
+
+    document.getElementsByClassName(menu)[0].classList.value = document.getElementsByClassName(menu)[0].classList.value.replace("hidden", "")
+}
+
+function datachange() {
+    console.log("datachange")
+    var data = {}
+    data.readycheck = document.getElementById("readycheck").checked
+    data.inviteaccept = document.getElementById("inviteaccept").checked
+    data.autoselect = { enabled: document.getElementById("autoselect").checked, chracters: [] }
+    data.autoban = { enabled: document.getElementById("autoban").checked, chracters: [] }
+    for(elmt of document.getElementsByClassName("characterSelector")) {
+        data.autoselect.chracters.push(elmt.value);
+    }
+    for(elmt of document.getElementsByClassName("characterBanner")) {
+        data.autoban.chracters.push(elmt.value);
+    }
+    ipcRenderer.send("data", data)
+}
+
+ipcRenderer.invoke('champlist', "").then((result) => {
+    ver = result.ver
+    var elements = []
+    for(element of document.getElementsByClassName("characterSelector")) {
+        result.champs.forEach(e => {
+            var option = document.createElement("option")
+            option.value = e
+            option.innerText = e
+            element.appendChild(option)
+        });
+    }
+})
+
+function characterChangeImage(e) {
+    datachange()
+    if (e.value == "None") return  e.parentElement.children[0].src = ""
+    e.parentElement.children[0].src = "http://ddragon.leagueoflegends.com/cdn/" + ver + "/img/champion/" + e.value + ".png"
+}
