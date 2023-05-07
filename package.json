@@ -1,7 +1,7 @@
 {
   "name": "blitzcrank",
   "version": "1.0.0",
-  "description": "",
+  "description": "A League of Legends automation app",
   "type": "commonjs",
   "main": "index.js",
   "scripts": {
@@ -9,7 +9,7 @@
     "package": "electron-forge package",
     "make": "electron-forge make"
   },
-  "author": "",
+  "author": "darwinikii",
   "license": "ISC",
   "devDependencies": {
     "@electron-forge/cli": "^6.1.1",

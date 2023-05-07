@@ -310,6 +310,8 @@ app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit()
 })
 
+if (require('electron-squirrel-startup')) app.quit();
+
 app.whenReady().then(async () => {
   await getAPIData()
   createWindow()
