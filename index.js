@@ -1,9 +1,11 @@
+const { setIntervalAsync, clearIntervalAsync } = require('set-interval-async');
 const { authenticate, createWebSocketConnection } = require('league-connect');
 const { app, BrowserWindow, ipcMain } = require('electron')
 const fetch = require('node-fetch');
 const Store = require('./Store.js')
 const https = require('https');
 const path = require('path');
+const fs = require('fs');
 
 const sleep = (ms) => new Promise((resolve, reject) => setTimeout(resolve, ms))
 
@@ -15,21 +17,33 @@ const store = new Store({
   defaults: {
     readycheck: false,
     inviteaccept: false,
-    autoselect: { enabled: false, chracters: ["None", "None", "None"] }
+    autoselect: { enabled: false, characters: ["None", "None", "None"] },
+    autoban: { enabled: false, characters: ["None", "None", "None"] }
   }
 })
 
 const getAPIData = async () => {
-  const versions = await (await fetch("https://ddragon.leagueoflegends.com/api/versions.json")).json()
-  const characters = await (await fetch("http://ddragon.leagueoflegends.com/cdn/" + versions[0] + "/data/en_US/champion.json")).json()
+  try {
+    const versions = await (await fetch("https://ddragon.leagueoflegends.com/api/versions.json")).json()
+    const characters = await (await fetch("http://ddragon.leagueoflegends.com/cdn/" + versions[0] + "/data/en_US/champion.json")).json()
  
-  Object.entries(characters.data).forEach((e, i, a) => {
-    champIds.nameToId[e[0]] = e[1].key
-    champIds.idToName[e[1].key] = e[0]
-    champIds.champs.push(e[0])
-  })
-  gameVersion = versions[0]
-} //selam
+    Object.entries(characters.data).forEach((e, i, a) => {
+      champIds.nameToId[e[0]] = e[1].key
+      champIds.idToName[e[1].key] = e[0]
+      champIds.champs.push(e[0])
+    })
+    gameVersion = versions[0]
+    fs.writeFileSync("./APIdata.json", JSON.stringify({ gameVersion: gameVersion, champIds: champIds }, null, 4))
+  } catch (e) {
+    try {
+      var data = JSON.parse((fs.readFileSync("./APIdata.json")).toString())
+      gameVersion = data.gameVersion
+      champIds = data.champIds
+    } catch(e) {
+      console.error(e)
+    }
+  }
+}
 
 const clientConnector = (async() => { 
   while(credentials == undefined) {
@@ -48,7 +62,7 @@ const clientConnector = (async() => {
           awaitConnection: true
         }
       })
-
+    
       websocket = ws
       summonerId = JSON.parse(await request("/lol-login/v1/session", "GET", credentials)).summonerId
 
@@ -67,10 +81,20 @@ const clientConnector = (async() => {
 })
 
 var subscribed = []
-const mainThread = setInterval(async () => {
+var championIdx = 0
+const mainThread = setIntervalAsync(async () => {
+  if (championIdx >= store.get("autoselect").characters.length) {
+    championIdx = 0
+  }
+
   if (credentials == undefined) return
   var state = JSON.parse(await request('/lol-gameflow/v1/gameflow-phase', "GET", credentials))
   console.log(state)
+
+  if (championIdx != 0 && state != "ChampSelect") {
+    championIdx = 0
+  }
+
   if (state == "None") {
     if (store.get("inviteaccept") == true) {
       if (websocket == undefined) return
@@ -95,16 +119,74 @@ const mainThread = setInterval(async () => {
   } else if (state == "ChampSelect") {
     const session = JSON.parse(await request("/lol-champ-select/v1/session", "GET", credentials))
     var localCell = session.localPlayerCellId
-    session.actions.pop().forEach((e, i, a) => {
-      if (e.completed == true) return
-      if (e.actorCellId == localCell) {
-        if (e.type == "pick") {
-          
+    //if (session.isCustomGame == true) return
+    for (action of session.actions.pop()) {
+      if (action.completed == true) continue
+      if (action.actorCellId == localCell) {
+        if (action.type == "pick") {
+          var selectList = store.get("autoselect").characters.map((e) => e = parseInt(champIds.nameToId[e]))
+          var allGrid = JSON.parse(await request("/lol-champ-select/v1/all-grid-champions/", "GET", credentials))
+          selectList = allGrid.filter((e) => {
+            if (!selectList.includes(e.id)) return false
+            if (e.disable == true) return false
+            if (e.owned == false) return false
+            if (e.selectionStatus.pickedByOtherOrBanned == true) return false
+            return true
+          })
+
+          console.log(selectList)
+          await request("/lol-champ-select/v1/session/actions/" + action.id, "PATCH", credentials, { 'championId': selectList[0].id })
+          await sleep(1000)
+          var selectionStatus = JSON.parse(await request("/lol-champ-select/v1/summoners/" + localCell, "GET", credentials))
+          if (selectionStatus.championId == selectList[0].id) return await request("/lol-champ-select/v1/session/actions/" + action.id + "/complete", "POST", credentials)
+          else selectList.shift()
+
+          await request("/lol-champ-select/v1/session/actions/" + action.id, "PATCH", credentials, { 'championId': selectList[0].id })
+          await sleep(1000)
+          var selectionStatus = JSON.parse(await request("/lol-champ-select/v1/summoners/" + localCell, "GET", credentials))
+          if (selectionStatus.championId == selectList[0].id) return await request("/lol-champ-select/v1/session/actions/" + action.id + "/complete", "POST", credentials)
+          else selectList.shift()
+
+          await request("/lol-champ-select/v1/session/actions/" + action.id, "PATCH", credentials, { 'championId': selectList[0].id })
+          await sleep(1000)
+          var selectionStatus = JSON.parse(await request("/lol-champ-select/v1/summoners/" + localCell, "GET", credentials))
+          if (selectionStatus.championId == selectList[0].id) return await request("/lol-champ-select/v1/session/actions/" + action.id + "/complete", "POST", credentials)
+          else selectList.shift()
+        }
+        if (action.type == "ban") {
+          var banList = store.get("autoban").characters.map((e) => parseInt(champIds.nameToId[e]))
+          var allGrid = JSON.parse(await request("/lol-champ-select/v1/all-grid-champions/", "GET", credentials))
+          banList = allGrid.filter((e) => {
+            if (!banList.includes(e.id)) return false
+            if (e.disable == true) return false
+            if (e.selectionStatus.pickIntented == true) return false
+            if (e.selectionStatus.pickedByOtherOrBanned == true) return false
+            return true
+          })
+
+          console.log(banList)
+          await request("/lol-champ-select/v1/session/actions/" + action.id, "PATCH", credentials, { 'championId': banList[0].id })
+          await sleep(1000)
+          var selectionStatus = JSON.parse(await request("/lol-champ-select/v1/summoners/" + localCell, "GET", credentials))
+          if (selectionStatus.banIntentSquarePortratPath.includes(banList[0].id)) return await request("/lol-champ-select/v1/session/actions/" + action.id + "/complete", "POST", credentials)
+          else banList.shift()
+
+          await request("/lol-champ-select/v1/session/actions/" + action.id, "PATCH", credentials, { 'championId': banList[0].id })
+          await sleep(1000)
+          var selectionStatus = JSON.parse(await request("/lol-champ-select/v1/summoners/" + localCell, "GET", credentials))
+          if (selectionStatus.banIntentSquarePortratPath.includes(banList[0].id)) return await request("/lol-champ-select/v1/session/actions/" + action.id + "/complete", "POST", credentials)
+          else banList.shift()
+
+          await request("/lol-champ-select/v1/session/actions/" + action.id, "PATCH", credentials, { 'championId': banList[0].id })
+          await sleep(1000)
+          var selectionStatus = JSON.parse(await request("/lol-champ-select/v1/summoners/" + localCell, "GET", credentials))
+          if (selectionStatus.banIntentSquarePortratPath.includes(banList[0].id)) return await request("/lol-champ-select/v1/session/actions/" + action.id + "/complete", "POST", credentials)
+          else banList.shift()
         }
       }
-    })
+    }
   }
-}, 1000)
+}, 3000)
 
 const createWindow = async () => {
   const win = new BrowserWindow({
@@ -142,7 +224,6 @@ const createWindow = async () => {
   });
   
   ipcMain.handle('champlist', async (event, args) => {
-    console.log(champIds.champs)
     return { champs: champIds.champs, ver: gameVersion }
   })
 
@@ -169,7 +250,7 @@ const request = async (path, method, _credentials, body) => {
       'Content-Type': 'application/json',
       Authorization: "Basic "  + Buffer.from(`riot:${_credentials.password}`).toString('base64')
     },
-    body: body ? body : (method == "POST" ? {} : undefined),
+    body: body ? JSON.stringify(body) : (method == "POST" ? {} : undefined),
     agent: new https.Agent(agentOptions)
   })
   //console.log({ method: method, headers: { Accept: 'application/json', 'Content-Type': 'application/json', Authorization: "Basic "  + Buffer.from(`riot:${_credentials.password}`).toString('base64') }, body: body ? body : (method == "POST" ? {} : undefined), agent: new https.Agent(agentOptions)})

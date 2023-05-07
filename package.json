@@ -14,6 +14,7 @@
   },
   "dependencies": {
     "bulma-extensions": "^6.2.7",
-    "league-connect": "^6.0.0-rc12"
+    "league-connect": "^6.0.0-rc12",
+    "set-interval-async": "^3.0.3"
   }
 }
