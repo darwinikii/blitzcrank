@@ -142,6 +142,26 @@ body {
     height: 24px;
 }
 
+.Settings {
+    position: absolute;
+    left: 60px;
+    width: 90%;
+    height: 100%;
+    padding-top: 30px;
+    padding-left: 10px;
+    padding-right: 10px;
+    display: table-column;
+    transition: visibility .5s, opacity .5s linear;
+    visibility: visible;
+    opacity: 1;
+    -webkit-text-fill-color: white;
+    overflow-x: auto;
+}
+
+.Settings > div > h1 {
+    font-size: 35;
+}
+
 .hidden {
     visibility: hidden;
     opacity: 0;

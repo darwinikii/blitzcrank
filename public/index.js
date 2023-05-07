@@ -7,6 +7,7 @@ window.onload = () => {
     new bootstrap.Tooltip(document.getElementById("Logo"))
     new bootstrap.Tooltip(document.getElementById("MainMenuBtn"))
     new bootstrap.Tooltip(document.getElementById("AutomationBtn"))
+    new bootstrap.Tooltip(document.getElementById("SettingsBtn"))
     new bootstrap.Tooltip(document.getElementById("playerIconErr"))
 
     ipcRenderer.invoke('champlist', "").then((result) => {
@@ -64,6 +65,7 @@ ipcRenderer.on("playerIcon", (event, data) => {
 function switchMenu(menu) {
     document.getElementsByClassName("MainMenu")[0].classList.value = "MainMenu hidden"
     document.getElementsByClassName("Automation")[0].classList.value= "Automation hidden"
+    document.getElementsByClassName("Settings")[0].classList.value= "Settings hidden"
 
     document.getElementsByClassName(menu)[0].classList.value = document.getElementsByClassName(menu)[0].classList.value.replace("hidden", "")
 }

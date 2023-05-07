@@ -1,5 +1,7 @@
 module.exports = {
-  packagerConfig: {},
+  packagerConfig: {
+    asar: true
+  },
   rebuildConfig: {},
   makers: [
     {
@@ -21,4 +23,18 @@ module.exports = {
       config: {},
     },
   ],
+  publishers: [
+    {
+      name: '@electron-forge/publisher-github',
+      config: {
+        repository: {
+          owner: 'darwinikii',
+          name: 'blitzcrank'
+        },
+        prerelease: false,
+        authToken: processs.env.GITHUB_TOKEN,
+        draft: false
+      }
+    }
+  ]
 };

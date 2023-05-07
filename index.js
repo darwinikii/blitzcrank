@@ -1,6 +1,6 @@
-const { setIntervalAsync, clearIntervalAsync } = require('set-interval-async');
+const { setIntervalAsync } = require('set-interval-async');
 const { authenticate, createWebSocketConnection } = require('league-connect');
-const { app, BrowserWindow, ipcMain } = require('electron')
+const { app, BrowserWindow, ipcMain, Menu, Tray } = require('electron')
 const fetch = require('node-fetch');
 const Store = require('./Store.js')
 const https = require('https');
@@ -18,7 +18,9 @@ const store = new Store({
     readycheck: false,
     inviteaccept: false,
     autoselect: { enabled: false, characters: ["None", "None", "None"] },
-    autoban: { enabled: false, characters: ["None", "None", "None"] }
+    autoban: { enabled: false, characters: ["None", "None", "None"] },
+    inTray: false,
+    discordPresence: true
   }
 })
 
@@ -270,15 +272,17 @@ const createWindow = async () => {
     height: 300,
     maximizable: false,
     resizable: false,
+    frame: true,
     titleBarStyle: "hidden",
     icon: path.join(__dirname, "blitzcrank.png"),
     webPreferences: {
       preload: path.join(__dirname, "public", "preload.js"),
       nodeIntegration: true,
       contextIsolation: false
-    }
+    },
   })
   
+  if (store.get("inTray") == true) win.hide()
   win.loadFile(path.join(__dirname, "public", "index.html"))
 
   ipcMain.on("run", async () => {
@@ -290,7 +294,8 @@ const createWindow = async () => {
     win.close()
   });
   ipcMain.on("minimize", () => {
-    win.minimize()
+    win.hide()
+    store.set("inTray", true)
   });
 
   ipcMain.on("data", (event, data) => {
@@ -315,6 +320,19 @@ if (require('electron-squirrel-startup')) app.quit();
 app.whenReady().then(async () => {
   await getAPIData()
   createWindow()
+  tray = new Tray('./blitzcrank.png')
+  const contextMenu = Menu.buildFromTemplate([
+    { 
+      label: 'Show App', 
+      click: (e) => {
+        window.show()
+        store.set("inTray", false)
+      } 
+    },
+    { label: 'Quit App', role: "quit" }
+  ])
+  tray.setToolTip('This is my application.')
+  tray.setContextMenu(contextMenu)
 })
 
 const request = async (path, method, _credentials, body) => {
