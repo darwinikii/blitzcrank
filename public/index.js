@@ -42,15 +42,15 @@ ipcRenderer.on("sync", (event, data) => {
     document.getElementsByClassName("characterSelector")[0].value = data.autoselect.characters[0]
     document.getElementsByClassName("characterSelector")[1].value = data.autoselect.characters[1]
     document.getElementsByClassName("characterSelector")[2].value = data.autoselect.characters[2]
-    document.getElementsByClassName("characterSelector")[0].onchange()
-    document.getElementsByClassName("characterSelector")[1].onchange()
-    document.getElementsByClassName("characterSelector")[2].onchange()
+    characterChangeImage(document.getElementsByClassName("characterSelector")[0], false)
+    characterChangeImage(document.getElementsByClassName("characterSelector")[1], false)
+    characterChangeImage(document.getElementsByClassName("characterSelector")[2], false)
     document.getElementsByClassName("characterBanner")[0].value = data.autoban.characters[0]
     document.getElementsByClassName("characterBanner")[1].value = data.autoban.characters[1]
     document.getElementsByClassName("characterBanner")[2].value = data.autoban.characters[2]
-    document.getElementsByClassName("characterBanner")[0].onchange()
-    document.getElementsByClassName("characterBanner")[1].onchange()
-    document.getElementsByClassName("characterBanner")[2].onchange()
+    characterChangeImage(document.getElementsByClassName("characterBanner")[0], false)
+    characterChangeImage(document.getElementsByClassName("characterBanner")[1], false)
+    characterChangeImage(document.getElementsByClassName("characterBanner")[2], false)
 })
 
 ipcRenderer.on("playerIcon", (event, data) => {
@@ -84,7 +84,8 @@ function datachange() {
     ipcRenderer.send("data", data)
 }
 
-function characterChangeImage(e) {
+function characterChangeImage(e, type) {
     if (e.value == "None") return  e.parentElement.children[0].src = ""
     e.parentElement.children[0].src = "http://ddragon.leagueoflegends.com/cdn/" + ver + "/img/champion/" + e.value + ".png"
+    if (type == true) return datachange()
 }

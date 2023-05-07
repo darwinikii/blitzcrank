@@ -119,68 +119,155 @@ const mainThread = setIntervalAsync(async () => {
   } else if (state == "ChampSelect") {
     const session = JSON.parse(await request("/lol-champ-select/v1/session", "GET", credentials))
     var localCell = session.localPlayerCellId
-    //if (session.isCustomGame == true) return
-    for (action of session.actions.pop()) {
+    var allActions = []
+    session.actions.forEach((row) => {
+      row.forEach((cell) => {
+        if (cell.completed == true) return
+        if (cell.isInProgress == false) return
+        if (cell.actorCellId != localCell) return
+        allActions.push(cell)
+      })
+    })
+
+    for (action of allActions) {
       if (action.completed == true) continue
       if (action.actorCellId == localCell) {
         if (action.type == "pick") {
+          if (!store.get("autoselect").enabled) return
           var selectList = store.get("autoselect").characters.map((e) => e = parseInt(champIds.nameToId[e]))
           var allGrid = JSON.parse(await request("/lol-champ-select/v1/all-grid-champions/", "GET", credentials))
-          selectList = allGrid.filter((e) => {
+          allGrid = allGrid.filter((e) => {
             if (!selectList.includes(e.id)) return false
             if (e.disable == true) return false
             if (e.owned == false) return false
+            if (session.bans.myTeamBans.includes(e.id) || session.bans.theirTeamBans.includes(e.id)) return false
             if (e.selectionStatus.pickedByOtherOrBanned == true) return false
             return true
           })
-
-          console.log(selectList)
-          await request("/lol-champ-select/v1/session/actions/" + action.id, "PATCH", credentials, { 'championId': selectList[0].id })
+          selectList = allGrid.sort((a, b) => selectList.indexOf(a.id) - selectList.indexOf(b.id))
           await sleep(1000)
+
+          if (!selectList[0]) return
+          await request("/lol-champ-select/v1/session/actions/" + action.id, "PATCH", credentials, { 'championId': selectList[0].id })
+          await sleep(2000)
           var selectionStatus = JSON.parse(await request("/lol-champ-select/v1/summoners/" + localCell, "GET", credentials))
-          if (selectionStatus.championId == selectList[0].id) return await request("/lol-champ-select/v1/session/actions/" + action.id + "/complete", "POST", credentials)
+          var newAction = await new Promise(async (resolve, reject) => {
+            JSON.parse(await request("/lol-champ-select/v1/session/", "GET", credentials)).actions.forEach((row) => {
+              row.forEach((cell) => {
+                if (cell.completed == true) return
+                if (cell.isInProgress == false) return
+                if (cell.actorCellId != localCell) return
+                if (cell.id != action.id) return
+                resolve(cell)
+              })
+            })
+          })
+          if (selectionStatus.championId == selectList[0].id || newAction.championId == selectList[0].id) return await request("/lol-champ-select/v1/session/actions/" + action.id + "/complete", "POST", credentials)
           else selectList.shift()
 
+          if (!selectList[0]) return
           await request("/lol-champ-select/v1/session/actions/" + action.id, "PATCH", credentials, { 'championId': selectList[0].id })
-          await sleep(1000)
+          await sleep(2000)
           var selectionStatus = JSON.parse(await request("/lol-champ-select/v1/summoners/" + localCell, "GET", credentials))
-          if (selectionStatus.championId == selectList[0].id) return await request("/lol-champ-select/v1/session/actions/" + action.id + "/complete", "POST", credentials)
+          var newAction = await new Promise(async (resolve, reject) => {
+            JSON.parse(await request("/lol-champ-select/v1/session/", "GET", credentials)).actions.forEach((row) => {
+              row.forEach((cell) => {
+                if (cell.completed == true) return
+                if (cell.isInProgress == false) return
+                if (cell.actorCellId != localCell) return
+                if (cell.id != action.id) return
+                resolve(cell)
+              })
+            })
+          })
+          if (selectionStatus.championId == selectList[0].id || newAction.championId == selectList[0].id) return await request("/lol-champ-select/v1/session/actions/" + action.id + "/complete", "POST", credentials)
           else selectList.shift()
 
+          if (!selectList[0]) return
           await request("/lol-champ-select/v1/session/actions/" + action.id, "PATCH", credentials, { 'championId': selectList[0].id })
-          await sleep(1000)
+          await sleep(2000)
           var selectionStatus = JSON.parse(await request("/lol-champ-select/v1/summoners/" + localCell, "GET", credentials))
-          if (selectionStatus.championId == selectList[0].id) return await request("/lol-champ-select/v1/session/actions/" + action.id + "/complete", "POST", credentials)
+          var newAction = await new Promise(async (resolve, reject) => {
+            JSON.parse(await request("/lol-champ-select/v1/session/", "GET", credentials)).actions.forEach((row) => {
+              row.forEach((cell) => {
+                if (cell.completed == true) return
+                if (cell.isInProgress == false) return
+                if (cell.actorCellId != localCell) return
+                if (cell.id != action.id) return
+                resolve(cell)
+              })
+            })
+          })
+          if (selectionStatus.championId == selectList[0].id || newAction.championId == selectList[0].id) return await request("/lol-champ-select/v1/session/actions/" + action.id + "/complete", "POST", credentials)
           else selectList.shift()
         }
         if (action.type == "ban") {
+          if (!store.get("autoban").enabled) return
+          var myTeamPickIntent = session.myTeam.map((e) => e.championId == 0 ? e.championPickIntent : e.championId)
           var banList = store.get("autoban").characters.map((e) => parseInt(champIds.nameToId[e]))
           var allGrid = JSON.parse(await request("/lol-champ-select/v1/all-grid-champions/", "GET", credentials))
-          banList = allGrid.filter((e) => {
+          allGrid = allGrid.filter((e) => {
             if (!banList.includes(e.id)) return false
             if (e.disable == true) return false
-            if (e.selectionStatus.pickIntented == true) return false
+            if (e.selectionStatus.pickIntented == true && e.selectionStatus.pickIntentedByMe == false) return false
+            if (session.bans.myTeamBans.includes(e.id) || session.bans.theirTeamBans.includes(e.id)) return false
             if (e.selectionStatus.pickedByOtherOrBanned == true) return false
+            if (myTeamPickIntent.includes(e.id)) return false
             return true
           })
-
-          console.log(banList)
-          await request("/lol-champ-select/v1/session/actions/" + action.id, "PATCH", credentials, { 'championId': banList[0].id })
+          banList = allGrid.sort((a, b) => banList.indexOf(a.id) - banList.indexOf(b.id))
           await sleep(1000)
+
+          if (!banList[0]) return
+          await request("/lol-champ-select/v1/session/actions/" + action.id, "PATCH", credentials, { 'championId': banList[0].id })
+          await sleep(2000)
           var selectionStatus = JSON.parse(await request("/lol-champ-select/v1/summoners/" + localCell, "GET", credentials))
-          if (selectionStatus.banIntentSquarePortratPath.includes(banList[0].id)) return await request("/lol-champ-select/v1/session/actions/" + action.id + "/complete", "POST", credentials)
+          var newAction = await new Promise(async (resolve, reject) => {
+            JSON.parse(await request("/lol-champ-select/v1/session/", "GET", credentials)).actions.forEach((row) => {
+              row.forEach((cell) => {
+                if (cell.completed == true) return
+                if (cell.isInProgress == false) return
+                if (cell.actorCellId != localCell) return
+                if (cell.id != action.id) return
+                resolve(cell)
+              })
+            })
+          })
+          if (selectionStatus.banIntentSquarePortratPath.includes(banList[0].id) || newAction.championId == banList[0].id) return await request("/lol-champ-select/v1/session/actions/" + action.id + "/complete", "POST", credentials)
           else banList.shift()
 
           await request("/lol-champ-select/v1/session/actions/" + action.id, "PATCH", credentials, { 'championId': banList[0].id })
-          await sleep(1000)
+          await sleep(2000)
           var selectionStatus = JSON.parse(await request("/lol-champ-select/v1/summoners/" + localCell, "GET", credentials))
-          if (selectionStatus.banIntentSquarePortratPath.includes(banList[0].id)) return await request("/lol-champ-select/v1/session/actions/" + action.id + "/complete", "POST", credentials)
+          var newAction = await new Promise(async (resolve, reject) => {
+            JSON.parse(await request("/lol-champ-select/v1/session/", "GET", credentials)).actions.forEach((row) => {
+              row.forEach((cell) => {
+                if (cell.completed == true) return
+                if (cell.isInProgress == false) return
+                if (cell.actorCellId != localCell) return
+                if (cell.id != action.id) return
+                resolve(cell)
+              })
+            })
+          })
+          if (selectionStatus.banIntentSquarePortratPath.includes(banList[0].id) || newAction.championId == banList[0].id) return await request("/lol-champ-select/v1/session/actions/" + action.id + "/complete", "POST", credentials)
           else banList.shift()
 
           await request("/lol-champ-select/v1/session/actions/" + action.id, "PATCH", credentials, { 'championId': banList[0].id })
-          await sleep(1000)
+          await sleep(2000)
           var selectionStatus = JSON.parse(await request("/lol-champ-select/v1/summoners/" + localCell, "GET", credentials))
-          if (selectionStatus.banIntentSquarePortratPath.includes(banList[0].id)) return await request("/lol-champ-select/v1/session/actions/" + action.id + "/complete", "POST", credentials)
+          var newAction = await new Promise(async (resolve, reject) => {
+            JSON.parse(await request("/lol-champ-select/v1/session/", "GET", credentials)).actions.forEach((row) => {
+              row.forEach((cell) => {
+                if (cell.completed == true) return
+                if (cell.isInProgress == false) return
+                if (cell.actorCellId != localCell) return
+                if (cell.id != action.id) return
+                resolve(cell)
+              })
+            })
+          })
+          if (selectionStatus.banIntentSquarePortratPath.includes(banList[0].id) || newAction.championId == banList[0].id) return await request("/lol-champ-select/v1/session/actions/" + action.id + "/complete", "POST", credentials)
           else banList.shift()
         }
       }
