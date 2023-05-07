@@ -81,19 +81,10 @@ const clientConnector = (async() => {
 })
 
 var subscribed = []
-var championIdx = 0
 const mainThread = setIntervalAsync(async () => {
-  if (championIdx >= store.get("autoselect").characters.length) {
-    championIdx = 0
-  }
-
   if (credentials == undefined) return
   var state = JSON.parse(await request('/lol-gameflow/v1/gameflow-phase', "GET", credentials))
   console.log(state)
-
-  if (championIdx != 0 && state != "ChampSelect") {
-    championIdx = 0
-  }
 
   if (state == "None") {
     if (store.get("inviteaccept") == true) {
@@ -130,9 +121,7 @@ const mainThread = setIntervalAsync(async () => {
     })
 
     for (action of allActions) {
-      if (action.completed == true) continue
-      if (action.actorCellId == localCell) {
-        if (action.type == "pick") {
+      if (action.type == "pick") {
           if (!store.get("autoselect").enabled) return
           var selectList = store.get("autoselect").characters.map((e) => e = parseInt(champIds.nameToId[e]))
           var allGrid = JSON.parse(await request("/lol-champ-select/v1/all-grid-champions/", "GET", credentials))
@@ -200,8 +189,8 @@ const mainThread = setIntervalAsync(async () => {
           })
           if (selectionStatus.championId == selectList[0].id || newAction.championId == selectList[0].id) return await request("/lol-champ-select/v1/session/actions/" + action.id + "/complete", "POST", credentials)
           else selectList.shift()
-        }
-        if (action.type == "ban") {
+      }
+      if (action.type == "ban") {
           if (!store.get("autoban").enabled) return
           var myTeamPickIntent = session.myTeam.map((e) => e.championId == 0 ? e.championPickIntent : e.championId)
           var banList = store.get("autoban").characters.map((e) => parseInt(champIds.nameToId[e]))
@@ -269,7 +258,6 @@ const mainThread = setIntervalAsync(async () => {
           })
           if (selectionStatus.banIntentSquarePortratPath.includes(banList[0].id) || newAction.championId == banList[0].id) return await request("/lol-champ-select/v1/session/actions/" + action.id + "/complete", "POST", credentials)
           else banList.shift()
-        }
       }
     }
   }
