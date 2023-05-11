@@ -349,7 +349,7 @@ const request = async (path, method, _credentials, body) => {
     body: body ? JSON.stringify(body) : (method == "POST" ? {} : undefined),
     agent: new https.Agent(agentOptions)
   })
-  //sconsole.log({ method: method, headers: { Accept: 'application/json', 'Content-Type': 'application/json', Authorization: "Basic "  + Buffer.from(`riot:${_credentials.password}`).toString('base64') }, body: body ? body : (method == "POST" ? {} : undefined), agent: new https.Agent(agentOptions)})
+  //console.log({ method: method, headers: { Accept: 'application/json', 'Content-Type': 'application/json', Authorization: "Basic "  + Buffer.from(`riot:${_credentials.password}`).toString('base64') }, body: body ? body : (method == "POST" ? {} : undefined), agent: new https.Agent(agentOptions)})
   return new Promise(async (resolve, reject) => {
     resolve(await req.text())
   })
