@@ -1,13 +1,14 @@
 module.exports = {
   packagerConfig: {
-    asar: true
+    asar: true,
+    icon: "./icons/icon.ico"
   },
   rebuildConfig: {},
   makers: [
     {
       name: '@electron-forge/maker-squirrel',
       config: {
-        icon: "./icons/icon"
+        setupIcon: "./icons/icon.ico"
       },
     },
     {
@@ -32,7 +33,7 @@ module.exports = {
           name: 'blitzcrank'
         },
         prerelease: false,
-        authToken: processs.env.GITHUB_TOKEN,
+        authToken: process.env.GITHUB_TOKEN,
         draft: false
       }
     }

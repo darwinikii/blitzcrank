@@ -1,6 +1,6 @@
-const { setIntervalAsync } = require('set-interval-async');
+const { setIntervalAsync, clearIntervalAsync } = require('set-interval-async');
 const { authenticate, createWebSocketConnection } = require('league-connect');
-const { app, BrowserWindow, ipcMain, Menu, Tray } = require('electron')
+const { app, BrowserWindow, ipcMain, Menu, Tray } = require('electron');
 const fetch = require('node-fetch');
 const Store = require('./Store.js')
 const https = require('https');
@@ -9,7 +9,7 @@ const fs = require('fs');
 
 const sleep = (ms) => new Promise((resolve, reject) => setTimeout(resolve, ms))
 
-var credentials, window, websocket, summonerId
+var credentials, window, websocket
 var gameVersion, champIds = { nameToId: {}, idToName: {}, champs: [] }
 
 const store = new Store({
@@ -19,8 +19,7 @@ const store = new Store({
     inviteaccept: false,
     autoselect: { enabled: false, characters: ["None", "None", "None"] },
     autoban: { enabled: false, characters: ["None", "None", "None"] },
-    inTray: false,
-    discordPresence: true
+    inTray: false
   }
 })
 
@@ -64,15 +63,18 @@ const clientConnector = (async() => {
           awaitConnection: true
         }
       })
-    
+      
       websocket = ws
-      summonerId = JSON.parse(await request("/lol-login/v1/session", "GET", credentials)).summonerId
 
       ws.on('close', async message => {
         credentials = undefined
         websocket = undefined
-        summonerId = undefined
         window.webContents.send("playerIcon", {})
+        setActivity({
+          details: "Client isn't connected",
+          startTimestamp: new Date(),
+          largeImageKey: "logo"
+        });
         await clientConnector()
       })
     } catch(e) {
@@ -281,7 +283,7 @@ const createWindow = async () => {
       contextIsolation: false
     },
   })
-  
+
   if (store.get("inTray") == true) win.hide()
   win.loadFile(path.join(__dirname, "public", "index.html"))
 
@@ -321,7 +323,7 @@ app.whenReady().then(async () => {
   await getAPIData()
   createWindow()
   tray = new Tray('./blitzcrank.png')
-  const contextMenu = Menu.buildFromTemplate([
+  var contextMenu = Menu.buildFromTemplate([
     { 
       label: 'Show App', 
       click: (e) => {
@@ -331,7 +333,6 @@ app.whenReady().then(async () => {
     },
     { label: 'Quit App', role: "quit" }
   ])
-  tray.setToolTip('This is my application.')
   tray.setContextMenu(contextMenu)
 })
 

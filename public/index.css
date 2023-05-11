@@ -162,6 +162,26 @@ body {
     font-size: 35;
 }
 
+.Settings > .entry {
+    display: flex;
+    width: 100%;
+    margin-top: 15px;
+}
+
+.Settings > .entry > .start {
+    position: relative;
+    height: 24px;
+    text-align: center;
+    justify-content: center;
+    display: flex;
+}
+
+.Settings > .entry > .end {
+    position: relative;
+    margin-left: auto;
+    height: 24px;
+}
+
 .hidden {
     visibility: hidden;
     opacity: 0;
