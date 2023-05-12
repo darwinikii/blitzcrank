@@ -1,6 +1,6 @@
 const { setIntervalAsync, clearIntervalAsync } = require('set-interval-async');
 const { authenticate, createWebSocketConnection } = require('league-connect');
-const { app, BrowserWindow, ipcMain, Menu, Tray, nativeImage } = require('electron');
+const { app, BrowserWindow, ipcMain, Menu, Tray } = require('electron');
 const fetch = require('node-fetch');
 const Store = require('./Store.js')
 const https = require('https');
@@ -323,10 +323,7 @@ let tray
 app.whenReady().then(async () => {
   await getAPIData()
   createWindow()
-  var icon = nativeImage.createFromPath('./blitzcranks.png')
-  tray = new Tray(icon)
-  if (icon.toDataURL().split(",")[1] == '') tray = new Tray()
-
+  tray = new Tray('./blitzcrank.png')
   var contextMenu = Menu.buildFromTemplate([
     { 
       label: 'Show App', 
