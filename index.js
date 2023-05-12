@@ -1,6 +1,6 @@
 const { setIntervalAsync, clearIntervalAsync } = require('set-interval-async');
 const { authenticate, createWebSocketConnection } = require('league-connect');
-const { app, BrowserWindow, ipcMain, Menu, Tray } = require('electron');
+const { app, BrowserWindow, ipcMain, Menu, Tray, nativeImage } = require('electron');
 const fetch = require('node-fetch');
 const Store = require('./Store.js')
 const https = require('https');
@@ -319,10 +319,14 @@ app.on('window-all-closed', () => {
 
 if (require('electron-squirrel-startup')) app.quit();
 
+let tray
 app.whenReady().then(async () => {
   await getAPIData()
   createWindow()
-  tray = new Tray('./blitzcrank.png')
+  var icon = nativeImage.createFromPath('./blitzcranks.png')
+  tray = new Tray(icon)
+  if (icon.toDataURL().split(",")[1] == '') tray = new Tray()
+
   var contextMenu = Menu.buildFromTemplate([
     { 
       label: 'Show App', 
