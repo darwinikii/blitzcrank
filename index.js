@@ -8,6 +8,7 @@ const path = require('path');
 const fs = require('fs');
 
 const sleep = (ms) => new Promise((resolve, reject) => setTimeout(resolve, ms))
+const defaultPath = (args) => path.join(app.getAppPath("app"), args)
 
 var credentials, window, websocket
 var gameVersion, champIds = { nameToId: {}, idToName: {}, champs: [] }
@@ -34,10 +35,10 @@ const getAPIData = async () => {
       champIds.champs.push(e[0])
     })
     gameVersion = versions[0]
-    fs.writeFileSync("./APIdata.json", JSON.stringify({ gameVersion: gameVersion, champIds: champIds }, null, 4))
+    fs.writeFileSync(defaultPath("APIdata.json"), JSON.stringify({ gameVersion: gameVersion, champIds: champIds }, null, 4))
   } catch (e) {
     try {
-      var data = JSON.parse((fs.readFileSync("./APIdata.json")).toString())
+      var data = JSON.parse((fs.readFileSync(defaultPath("APIdata.json"))).toString())
       gameVersion = data.gameVersion
       champIds = data.champIds
     } catch(e) {
@@ -276,7 +277,7 @@ const createWindow = async () => {
     resizable: false,
     frame: true,
     titleBarStyle: "hidden",
-    icon: path.join(process.resourcesPath, "icons","1024x1024.png"),
+    icon: defaultPath("icons/1024x1024.png"),
     webPreferences: {
       preload: path.join(__dirname, "public", "preload.js"),
       nodeIntegration: true,
@@ -319,11 +320,13 @@ app.on('window-all-closed', () => {
 
 if (require('electron-squirrel-startup')) app.quit();
 
-let tray
+var tray
 app.whenReady().then(async () => {
   await getAPIData()
   createWindow()
-  tray = new Tray(path.join(process.resourcesPath, "icons","1024x1024.png"))
+
+  tray = new Tray(defaultPath("icons/1024x1024.png"))
+
   var contextMenu = Menu.buildFromTemplate([
     { 
       label: 'Show App', 

@@ -2,10 +2,11 @@ module.exports = {
   packagerConfig: {
     asar: true,
     icon: "./icons/icon.ico",
-    extraResource: [
-      "./APIdata.json",
-      "./icons"
-     ]
+    ignore: [
+      "APIdata.json",
+      ".vscode",
+      "forge.config.js"
+    ]
   },
   rebuildConfig: {},
   makers: [
