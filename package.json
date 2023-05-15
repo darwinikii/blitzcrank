@@ -1,6 +1,6 @@
 {
   "name": "blitzcrank",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "description": "A League of Legends automation app",
   "type": "commonjs",
   "main": "index.js",
