@@ -276,7 +276,7 @@ const createWindow = async () => {
     resizable: false,
     frame: true,
     titleBarStyle: "hidden",
-    icon: path.join(__dirname, "blitzcrank.png"),
+    icon: path.join(process.resourcesPath, "icons","1024x1024.png"),
     webPreferences: {
       preload: path.join(__dirname, "public", "preload.js"),
       nodeIntegration: true,
@@ -323,7 +323,7 @@ let tray
 app.whenReady().then(async () => {
   await getAPIData()
   createWindow()
-  tray = new Tray('./blitzcrank.png')
+  tray = new Tray(path.join(process.resourcesPath, "icons","1024x1024.png"))
   var contextMenu = Menu.buildFromTemplate([
     { 
       label: 'Show App', 
