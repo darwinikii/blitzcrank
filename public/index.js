@@ -1,6 +1,6 @@
 const { ipcRenderer } = require("electron")
 
-var ver = "13.9.1"
+var ver = "13.18.1"
 
 window.onload = () => {
     new bootstrap.Tooltip(document.getElementById("playerIcon"))
@@ -12,7 +12,6 @@ window.onload = () => {
 
     ipcRenderer.invoke('champlist', "").then((result) => {
         ver = result.ver
-        var elements = []
         for(element of document.getElementsByClassName("characterSelector")) {
             result.champs.forEach(e => {
                 var option = document.createElement("option")
@@ -31,33 +30,60 @@ window.onload = () => {
         }
     })
 
+    ipcRenderer.invoke('reqData', "").then((result) => {
+        if (result.companion == true) {
+            ipcRenderer.invoke('hexIP', "").then((result) => {
+                if (result != 100100) document.getElementById("hexcode").innerHTML = "Companion App [Code: " + result + "]"
+                else document.getElementById("hexcode").innerHTML = "Companion App"
+            })
+        }
+    })
+
     ipcRenderer.send("run");
 }
 
 ipcRenderer.on("sync", (event, data) => {
-    console.log(data)
     document.getElementById("readycheck").checked = data.readycheck
     document.getElementById("inviteaccept").checked = data.inviteaccept
     document.getElementById("autoselect").checked = data.autoselect.enabled
     document.getElementById("autoban").checked = data.autoban.enabled
-    document.getElementsByClassName("characterSelector")[0].value = data.autoselect.characters[0]
-    document.getElementsByClassName("characterSelector")[1].value = data.autoselect.characters[1]
-    document.getElementsByClassName("characterSelector")[2].value = data.autoselect.characters[2]
+    document.getElementsByClassName("characterSelector")[0].value = data.autoselect.slots[0].character
+    document.getElementsByClassName("characterSelector")[1].value = data.autoselect.slots[1].character
+    document.getElementsByClassName("characterSelector")[2].value = data.autoselect.slots[2].character
+    document.getElementsByClassName("characterSelector")[3].value = data.autoselect.slots[3].character
+    document.getElementsByClassName("characterSelector")[4].value = data.autoselect.slots[4].character
+    document.getElementsByClassName("laneSelector")[0].value = data.autoselect.slots[0].lane
+    document.getElementsByClassName("laneSelector")[1].value = data.autoselect.slots[1].lane
+    document.getElementsByClassName("laneSelector")[2].value = data.autoselect.slots[2].lane
+    document.getElementsByClassName("laneSelector")[3].value = data.autoselect.slots[3].lane
+    document.getElementsByClassName("laneSelector")[4].value = data.autoselect.slots[4].lane
     characterChangeImage(document.getElementsByClassName("characterSelector")[0], false)
     characterChangeImage(document.getElementsByClassName("characterSelector")[1], false)
     characterChangeImage(document.getElementsByClassName("characterSelector")[2], false)
-    document.getElementsByClassName("characterBanner")[0].value = data.autoban.characters[0]
-    document.getElementsByClassName("characterBanner")[1].value = data.autoban.characters[1]
-    document.getElementsByClassName("characterBanner")[2].value = data.autoban.characters[2]
+    characterChangeImage(document.getElementsByClassName("characterSelector")[3], false)
+    characterChangeImage(document.getElementsByClassName("characterSelector")[4], false)
+    document.getElementsByClassName("characterBanner")[0].value = data.autoban.slots[0].character
+    document.getElementsByClassName("characterBanner")[1].value = data.autoban.slots[1].character
+    document.getElementsByClassName("characterBanner")[2].value = data.autoban.slots[2].character
     characterChangeImage(document.getElementsByClassName("characterBanner")[0], false)
     characterChangeImage(document.getElementsByClassName("characterBanner")[1], false)
     characterChangeImage(document.getElementsByClassName("characterBanner")[2], false)
+    document.getElementById("companionSwitch").checked = data.companion
+    if (data.companion == true) {
+        ipcRenderer.invoke('hexIP', "").then((result) => {
+            if (result != 100100) document.getElementById("hexcode").innerHTML = "Companion App [Code: " + result + "]"
+            else document.getElementById("hexcode").innerHTML = "Companion App"
+        })
+    }
+
+    console.log("Sync completed from main server : ")
+    console.log(data)
 })
 
 ipcRenderer.on("playerIcon", (event, data) => {
     if (!data.displayName) { document.getElementById("playerIcon").style.display = "none"; document.getElementById("playerIconErr").style.display = "block"; return }
     document.getElementById("playerIcon").setAttribute("data-bs-title", data.displayName)
-    document.getElementById("playerIcon").src = "https://ddragon.leagueoflegends.com/cdn/13.8.1/img/profileicon/" + data.profileIconId + ".png"
+    document.getElementById("playerIcon").src = "https://ddragon.leagueoflegends.com/cdn/13.18.1/img/profileicon/" + data.profileIconId + ".png"
     document.getElementById("playerIcon").style.display = "block"
     document.getElementById("playerIconErr").style.display = "none"
 })
@@ -71,19 +97,45 @@ function switchMenu(menu) {
 }
 
 function datachange() {
-    console.log("datachange")
     var data = {}
     data.readycheck = document.getElementById("readycheck").checked
     data.inviteaccept = document.getElementById("inviteaccept").checked
-    data.autoselect = { enabled: document.getElementById("autoselect").checked, characters: [] }
-    data.autoban = { enabled: document.getElementById("autoban").checked, characters: [] }
-    for(elmt of document.getElementsByClassName("characterSelector")) {
-        data.autoselect.characters.push(elmt.value);
+    data.autoselect = { enabled: document.getElementById("autoselect").checked, slots: [] }
+    data.autoban = { enabled: document.getElementById("autoban").checked, slots: [] }
+
+    for(elmt in document.getElementsByClassName("characterSelector")) {
+        if (document.getElementsByClassName("characterSelector")[elmt].value == undefined) continue
+        data.autoselect.slots.push({
+            character: document.getElementsByClassName("characterSelector")[elmt].value,
+            lane: document.getElementsByClassName("laneSelector")[elmt].value
+        });
     }
+
     for(elmt of document.getElementsByClassName("characterBanner")) {
-        data.autoban.characters.push(elmt.value);
+        data.autoban.slots.push({
+            character: elmt.value
+        });
     }
-    ipcRenderer.send("data", data)
+
+    data.companion = document.getElementById("companionSwitch").checked
+
+    console.log("New data : ")
+    console.log(data)
+    ipcRenderer.send("setData", data)
+}
+
+function switchCompanion(e) {
+    if (e.checked == true) {
+        ipcRenderer.invoke('hexIP', "").then((result) => {
+            if (result != 100100) document.getElementById("hexcode").innerHTML = "Companion App [Code: " + result + "]"
+            else document.getElementById("hexcode").innerHTML = "Companion App"
+        })
+
+        datachange()
+    } else {
+        document.getElementById("hexcode").innerHTML = "Companion App"
+        datachange()
+    }
 }
 
 function characterChangeImage(e, type) {

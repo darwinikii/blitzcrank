@@ -18,7 +18,20 @@ body {
     width: 100px;
 }
 
+.laneSelector {
+    background-color: #1e1e1e;
+    -webkit-text-fill-color: white;
+    border-color: #1e1e1e;
+    margin-top: 5px;
+    width: 100px;
+}
+
 .characterSelector > option {
+    -webkit-text-fill-color: white;
+    color: white;
+}
+
+.laneSelector > option {
     -webkit-text-fill-color: white;
     color: white;
 }
@@ -204,7 +217,7 @@ body {
     width: 100%;
     height: 25px;
     display: flex;
-    padding-right: 20px;
+    padding-right: 25px;
     padding-left: 5px;
     justify-content: right;
     -webkit-app-region: drag;
@@ -238,4 +251,24 @@ body {
 
 img[src=""] {
     visibility: hidden;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+}
+
+/* Track */
+::-webkit-scrollbar-track {
+  background: #333;
+}
+
+/* Handle */
+::-webkit-scrollbar-thumb {
+  background: #1177bb;
+  border-radius: 25px;
+}
+
+/* Handle on hover */
+::-webkit-scrollbar-thumb:hover {
+  background: #0c5687;
 }

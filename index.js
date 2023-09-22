@@ -1,14 +1,24 @@
 const { setIntervalAsync, clearIntervalAsync } = require('set-interval-async');
 const { authenticate, createWebSocketConnection } = require('league-connect');
 const { app, BrowserWindow, ipcMain, Menu, Tray } = require('electron');
+const bodyParser = require('body-parser');
 const fetch = require('node-fetch');
-const Store = require('./Store.js')
+const Store = require('./Store.js');
+const express = require('express')
 const https = require('https');
 const path = require('path');
+const osIp = require("os");
 const fs = require('fs');
+const ip = require("ip");
+
+console.log('Launching');
 
 const sleep = (ms) => new Promise((resolve, reject) => setTimeout(resolve, ms))
 const defaultPath = (args) => path.join(app.getAppPath("app"), args)
+
+const exp = express()
+exp.use(bodyParser.urlencoded({ extended: true }));
+exp.use(express.json());
 
 var credentials, window, websocket
 var gameVersion, champIds = { nameToId: {}, idToName: {}, champs: [] }
@@ -18,9 +28,44 @@ const store = new Store({
   defaults: {
     readycheck: false,
     inviteaccept: false,
-    autoselect: { enabled: false, characters: ["None", "None", "None"] },
-    autoban: { enabled: false, characters: ["None", "None", "None"] },
-    inTray: false
+    autoselect: { enabled: false, slots: [
+      {
+        character: "None",
+        lane: "Any"
+      },
+      {
+        character: "None",
+        lane: "Any"
+      },
+      {
+        character: "None",
+        lane: "Any"
+      },
+      {
+        character: "None",
+        lane: "Any"
+      },
+      {
+        character: "None",
+        lane: "Any"
+      }
+    ] },
+    autoban: { enabled: false, slots: [
+      {
+        character: "None",
+        lane: "Any"
+      },
+      {
+        character: "None",
+        lane: "Any"
+      },
+      {
+        character: "None",
+        lane: "Any"
+      }
+    ] },
+    inTray: false,
+    companion: false
   }
 })
 
@@ -115,6 +160,19 @@ const mainThread = setIntervalAsync(async () => {
   } else if (state == "ChampSelect") {
     const session = JSON.parse(await request("/lol-champ-select/v1/session", "GET", credentials))
     var localCell = session.localPlayerCellId
+    var lane = await new Promise((resolve, reject) => {
+      session.myTeam.forEach((e) => {
+        if (e.cellId == localCell) {
+          resolve(e.assignedPosition)
+        }
+      })
+      resolve("")
+    })
+    
+    lane = lane == "" ? "any" : lane
+
+    console.log(lane)
+    
     var allActions = []
     session.actions.forEach((row) => {
       row.forEach((cell) => {
@@ -128,36 +186,51 @@ const mainThread = setIntervalAsync(async () => {
     for (action of allActions) {
       if (action.type == "pick") {
           if (!store.get("autoselect").enabled) return
-          var selectList = store.get("autoselect").characters.map((e) => e = parseInt(champIds.nameToId[e]))
+          var selectList = store.get("autoselect").slots.map((e) => e = parseInt(champIds.nameToId[e.character]))
+          console.log(selectList)
+          var laneList = store.get("autoselect").slots.map((e) => e = e.lane)
           var allGrid = JSON.parse(await request("/lol-champ-select/v1/all-grid-champions/", "GET", credentials))
           allGrid = allGrid.filter((e) => {
             if (!selectList.includes(e.id)) return false
+            e.userPreferredLane = laneList[selectList.indexOf(e.id)]
             if (e.disable == true) return false
             if (e.owned == false) return false
             if (session.bans.myTeamBans.includes(e.id) || session.bans.theirTeamBans.includes(e.id)) return false
             if (e.selectionStatus.pickedByOtherOrBanned == true) return false
+            if (e.userPreferredLane != lane) return false
             return true
           })
           selectList = allGrid.sort((a, b) => selectList.indexOf(a.id) - selectList.indexOf(b.id))
           await sleep(1000)
 
-          if (!selectList[0]) return
-          await request("/lol-champ-select/v1/session/actions/" + action.id, "PATCH", credentials, { 'championId': selectList[0].id })
-          await sleep(2000)
-          var selectionStatus = JSON.parse(await request("/lol-champ-select/v1/summoners/" + localCell, "GET", credentials))
-          var newAction = await new Promise(async (resolve, reject) => {
-            JSON.parse(await request("/lol-champ-select/v1/session/", "GET", credentials)).actions.forEach((row) => {
-              row.forEach((cell) => {
-                if (cell.completed == true) return
-                if (cell.isInProgress == false) return
-                if (cell.actorCellId != localCell) return
-                if (cell.id != action.id) return
-                resolve(cell)
+          if (!selectList[0]) console.log("ALL DELETED")
+
+          for (let i = 0; i < 5; i++) {
+            if (!selectList[0]) continue
+            console.log(selectList[0].name)
+            console.log(selectList[0].userPreferredLane)
+            await request("/lol-champ-select/v1/session/actions/" + action.id, "PATCH", credentials, { 'championId': selectList[0].id })
+            await sleep(1000)
+            var selectionStatus = JSON.parse(await request("/lol-champ-select/v1/summoners/" + localCell, "GET", credentials))
+            var newAction = await new Promise(async (resolve, reject) => {
+              JSON.parse(await request("/lol-champ-select/v1/session/", "GET", credentials)).actions.forEach((row) => {
+                row.forEach((cell) => {
+                  if (cell.completed == true) return
+                  if (cell.isInProgress == false) return
+                  if (cell.actorCellId != localCell) return
+                  if (cell.id != action.id) return
+                  resolve(cell)
+                })
               })
             })
-          })
-          if (selectionStatus.championId == selectList[0].id || newAction.championId == selectList[0].id) return await request("/lol-champ-select/v1/session/actions/" + action.id + "/complete", "POST", credentials)
-          else selectList.shift()
+            if (selectionStatus.championId == selectList[0].id || newAction.championId == selectList[0].id) {
+              await request("/lol-champ-select/v1/session/actions/" + action.id + "/complete", "POST", credentials)
+              continue
+            } 
+            else selectList.shift()
+          }
+
+          return
 
           if (!selectList[0]) return
           await request("/lol-champ-select/v1/session/actions/" + action.id, "PATCH", credentials, { 'championId': selectList[0].id })
@@ -198,7 +271,8 @@ const mainThread = setIntervalAsync(async () => {
       if (action.type == "ban") {
           if (!store.get("autoban").enabled) return
           var myTeamPickIntent = session.myTeam.map((e) => e.championId == 0 ? e.championPickIntent : e.championId)
-          var banList = store.get("autoban").characters.map((e) => parseInt(champIds.nameToId[e]))
+          var banList = store.get("autoban").slots.map((e) => parseInt(champIds.nameToId[e.character]))
+          console.log(banList)
           var allGrid = JSON.parse(await request("/lol-champ-select/v1/all-grid-champions/", "GET", credentials))
           allGrid = allGrid.filter((e) => {
             if (!banList.includes(e.id)) return false
@@ -268,11 +342,31 @@ const mainThread = setIntervalAsync(async () => {
   }
 }, 3000)
 
+exp.get('/testConnection', (req, res) => {
+  res.send({ status: "OK" })
+})
+
+exp.get('/getData', (req, res) => {
+  res.send(store.data)
+})
+
+exp.get('/getChamps', (req, res) => {
+  res.send({ champs: champIds.champs, ver: gameVersion })
+})
+
+exp.post('/setData', (req, res) => {
+  console.log(req.body)
+  window.webContents.send("sync", req.body)
+  store.setAll(req.body)
+  res.send({ status: "OK" })
+})
+
+
 const createWindow = async () => {
   const win = new BrowserWindow({
     title: "Blitzcrank",
-    width: 600,
-    height: 300,
+    width: 700,
+    height: 400,
     maximizable: false,
     resizable: false,
     frame: true,
@@ -289,8 +383,8 @@ const createWindow = async () => {
   win.loadFile(path.join(__dirname, "public", "index.html"))
 
   ipcMain.on("run", async () => {
-    console.log("Hello World")
     win.webContents.send("sync", store.data)
+    if (store.data.companion == true) exp.listen(3131)
   });
 
   ipcMain.on("close", () => {
@@ -301,14 +395,33 @@ const createWindow = async () => {
     store.set("inTray", true)
   });
 
-  ipcMain.on("data", (event, data) => {
+  ipcMain.on("setData", (event, data) => {
+    if (store.data.companion != data.companion) {
+      if (data.companion == true) {
+        exp.listen(3131)
+      } else {
+        exp.close()
+      }
+    }
     store.setAll(data)
     console.log(data)
   });
+
+  ipcMain.handle('reqData', async (event, args) => {
+    return store.data
+  })
   
   ipcMain.handle('champlist', async (event, args) => {
     return { champs: champIds.champs, ver: gameVersion }
   })
+
+  ipcMain.handle('hexIP', async (event, args) => {
+    var ip = getUserIp()
+    ip = ip == null ? "192.168.256.256" : ip
+    return ipToHex(ip)
+  })
+
+  win.webContents.openDevTools()
 
   window = win
   clientConnector()
@@ -339,6 +452,42 @@ app.whenReady().then(async () => {
   ])
   tray.setContextMenu(contextMenu)
 })
+
+const getUserIp = () => {
+  const ethernetIp = osIp.networkInterfaces()["Ethernet"];
+  const wifiIp = osIp.networkInterfaces()["Wi-Fi"];
+
+  const ethernetIpv4 =
+    ethernetIp && ethernetIp.find((ip) => ip.family === "IPv4");
+  const wifiIpv4 = wifiIp && wifiIp.find((ip) => ip.family === "IPv4");
+
+  var userIp = null
+
+  if (wifiIpv4 && ip.isPrivate(wifiIpv4.address)) {
+    userIp = wifiIpv4.address;
+  }
+
+  if (ethernetIpv4 && ip.isPrivate(ethernetIpv4.address)) {
+    userIp = ethernetIpv4.address;
+  }
+
+  return userIp
+}
+
+const ipToHex = (ipAddress) => {
+  let hex = "";
+  const octetos = ipAddress.split(".");
+  for (let i = 0; i < octetos.length; i++) {
+    let octetoHex = parseInt(octetos[i]).toString(16);
+    if (octetoHex.length === 1) {
+      octetoHex = "0" + octetoHex;
+    }
+    hex += octetoHex;
+  }
+
+  const code = hex.slice(4)
+  return code;
+}
 
 const request = async (path, method, _credentials, body) => {
   if (_credentials == undefined) return console.log("Credentials Undefined")
