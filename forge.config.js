@@ -22,12 +22,31 @@ module.exports = {
     },
     {
       name: '@electron-forge/maker-deb',
-      config: {},
+      config: {
+        options: {
+          icon: "./icons/icon.ico",
+          categories: ["Game", "Utility"],
+          productName: "Blitzcrank"
+        }
+      },
     },
     {
       name: '@electron-forge/maker-rpm',
-      config: {},
+      config: {
+        options: {
+          icon: "./icons/icon.ico",
+          categories: ["Game", "Utility"],
+          productName: "Blitzcrank"
+        }
+      },
     },
+    {
+      name: '@electron-forge/maker-dmg',
+      config: {
+        icon: "./icons/icon.ico",
+        name: "Blitzcrank"
+      },
+    }
   ],
   publishers: [
     {
