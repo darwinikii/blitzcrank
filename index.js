@@ -19,6 +19,8 @@ const defaultPath = (args) => path.join(app.getAppPath("app"), args)
 const exp = express()
 exp.use(bodyParser.urlencoded({ extended: true }));
 exp.use(express.json());
+var expListener = exp.listen(3131)
+expListener.close()
 
 var credentials, window, websocket
 var gameVersion, champIds = { nameToId: {}, idToName: {}, champs: [] }
@@ -384,7 +386,7 @@ const createWindow = async () => {
 
   ipcMain.on("run", async () => {
     win.webContents.send("sync", store.data)
-    if (store.data.companion == true) exp.listen(3131)
+    if (store.data.companion == true) expListener = exp.listen(3131)
   });
 
   ipcMain.on("close", () => {
@@ -398,9 +400,9 @@ const createWindow = async () => {
   ipcMain.on("setData", (event, data) => {
     if (store.data.companion != data.companion) {
       if (data.companion == true) {
-        exp.listen(3131)
+        expListener = exp.listen(3131)
       } else {
-        exp.close()
+        expListener.close()
       }
     }
     store.setAll(data)
@@ -420,8 +422,6 @@ const createWindow = async () => {
     ip = ip == null ? "192.168.256.256" : ip
     return ipToHex(ip)
   })
-
-  win.webContents.openDevTools()
 
   window = win
   clientConnector()
