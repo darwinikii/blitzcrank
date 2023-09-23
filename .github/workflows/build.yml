@@ -8,7 +8,7 @@ jobs:
 
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest]
+        os: [macos-latest, ubuntu-latest, windows-latest]
 
     steps:
       - name: Check out Git repository
@@ -34,6 +34,6 @@ jobs:
         with:
           name: build
           path: |
-            ./out/make/deb
-            ./out/make/rpm
-            ./out/make/squirrel.windows
+            ./out/make/deb/x64
+            ./out/make/rpm/x64
+            ./out/make/squirrel.windows/x64
