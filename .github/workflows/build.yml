@@ -28,5 +28,4 @@ jobs:
       - name: "Build"
         env:
           GITHUB_TOKEN: ${{ secrets.github_token }}
-        run: npm run publish-dry-run
-        run: npm run publish-from-dry-run
+        run: npm run publish-dry-run | npm run publish-from-dry-run
