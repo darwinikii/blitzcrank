@@ -37,3 +37,4 @@ jobs:
             ./out/make/deb/x64
             ./out/make/rpm/x64
             ./out/make/squirrel.windows/x64
+            ./out/make/
