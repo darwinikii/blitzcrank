@@ -22,7 +22,7 @@ exp.use(express.json());
 var expListener = exp.listen(3131)
 expListener.close()
 
-var credentials, window, websocket
+var credentials, window
 var gameVersion, champIds = { nameToId: {}, idToName: {}, champs: [] }
 
 const store = new Store({
@@ -97,9 +97,12 @@ const getAPIData = async () => {
 const clientConnector = (async() => { 
   while(credentials == undefined) {
     try {
+      console.log("Awaiting connection")
       var client = await authenticate({ awaitConnection: true })
       while(true) {
         var summoner = JSON.parse(await request('/lol-summoner/v1/current-summoner', "GET", client))
+        if (summoner.errorCode) continue
+        console.log(summoner)
         if (summoner.displayName) {
           window.webContents.send("playerIcon", summoner)
           break
@@ -111,18 +114,10 @@ const clientConnector = (async() => {
           awaitConnection: true
         }
       })
-      
-      websocket = ws
 
       ws.on('close', async message => {
         credentials = undefined
-        websocket = undefined
         window.webContents.send("playerIcon", {})
-        setActivity({
-          details: "Client isn't connected",
-          startTimestamp: new Date(),
-          largeImageKey: "logo"
-        });
         await clientConnector()
       })
     } catch(e) {
@@ -132,7 +127,6 @@ const clientConnector = (async() => {
   }
 })
 
-var subscribed = []
 const mainThread = setIntervalAsync(async () => {
   if (credentials == undefined) return
   var state = JSON.parse(await request('/lol-gameflow/v1/gameflow-phase', "GET", credentials))
@@ -140,15 +134,10 @@ const mainThread = setIntervalAsync(async () => {
 
   if (state == "None") {
     if (store.get("inviteaccept") == true) {
-      if (websocket == undefined) return
-      if (!subscribed.includes("/lol-lobby/v2/received-invitations")) {
-        subscribed.push("/lol-lobby/v2/received-invitations")
-        websocket.subscribe('/lol-lobby/v2/received-invitations', async (data, event) => {
-          if (!data[0]) return
-          await request('/lol-lobby/v2/received-invitations/' + data[0].invitationId + "/accept", "POST", credentials, {})
-          websocket.unsubscribe('/lol-lobby/v2/received-invitations')
-          delete subscribed[subscribed.indexOf("/lol-lobby/v2/received-invitations")]
-        })
+      var invites = JSON.parse(await request('/lol-lobby/v2/received-invitations/', "GET", credentials))
+
+      if (invites[0] && invites[0].canAcceptInvitation == true) {
+        await request('/lol-lobby/v2/received-invitations/' + invites[0].invitationId + "/accept", "POST", credentials, {})
       }
     }
   } else if (state == "Lobby") {
