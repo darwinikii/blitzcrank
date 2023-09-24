@@ -45,27 +45,23 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: Linux
-          path: |
-            ./out/make/deb/x64/*.deb
+          path: ./out/make/deb/x64/*.deb
       
       - name: Upload Artifacts for Fedora
         if: matrix.os == 'ubuntu-latest'
         uses: actions/upload-artifact@v3
         with:
           name: Linux
-          path: |
-            ./out/make/rpm/x64/*.rpm
+          path: ./out/make/rpm/x64/*.rpm
 
       - name: Upload Artifacts for MacOS
         if: matrix.os == 'macos-latest'
         uses: actions/upload-artifact@v3
         with:
           name: MacOS
-          path: |
-            ./out/make/*.dmg
+          path: ./out/make/*.dmg
 
       - name: Create Release
-        if: matrix.os == 'windows-latest'
         id: create_release
         uses: actions/create-release@v1
         env:
@@ -76,9 +72,8 @@ jobs:
           draft: false
           prerelease: false
 
-      - name: Upload Release Asset
+      - name: Upload Windows Version
         if: matrix.os == 'windows-latest'
-        id: upload-release-asset 
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -86,3 +81,33 @@ jobs:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
           asset_path: ./out/make/squirrel.windows/x64/*.exe
           asset_name: Windows Setup
+      
+      - name: Upload Ubuntu Version
+        if: matrix.os == 'ubuntu-latest'
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
+          asset_path: ./out/make/deb/x64/*.deb
+          asset_name: Ubuntu Setup
+      
+      - name: Upload Fedora Version
+        if: matrix.os == 'ubuntu-latest'
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
+          asset_path: ./out/make/rpm/x64/*.rpm
+          asset_name: Fedora Setup
+
+      - name: Upload MacOS Version
+        if: matrix.os == 'macos-latest'
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
+          asset_path: ./out/make/*.dmg
+          asset_name: MacOS Setup
