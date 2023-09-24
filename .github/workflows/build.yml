@@ -65,57 +65,42 @@ jobs:
           name: MacOS
           path: ./out/make/*.dmg
 
-      - name: Create Release
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Upload MacOS Version
+        uses: marvinpinto/action-automatic-releases@latest
+        if: matrix.os == 'macos-latest'
         with:
-          tag_name: ${{ github.ref }}
-          release_name: ${{ github.ref }}
-          draft: false
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          automatic_release_tag: latest
           prerelease: false
+          title: v${{ github.ref }}
+          files: ./out/make/*.dmg
+
+      - name: Upload Fedora Version
+        uses: marvinpinto/action-automatic-releases@latest
+        if: matrix.os == 'ubuntu-latest'
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          automatic_release_tag: latest
+          prerelease: false
+          title: v${{ github.ref }}
+          files: ./out/make/rpm/x64/*.rpm
+
+      - name: Upload Ubuntu Version
+        uses: marvinpinto/action-automatic-releases@latest
+        if: matrix.os == 'ubuntu-latest'
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          automatic_release_tag: latest
+          prerelease: false
+          title: v${{ github.ref }}
+          files: ./out/make/deb/x64/*.deb
 
       - name: Upload Windows Version
+        uses: marvinpinto/action-automatic-releases@latest
         if: matrix.os == 'windows-latest'
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
-          asset_path: ./out/make/squirrel.windows/x64/blitzcrank-${{ github.ref }} Setup.exe
-          asset_name: Blitzcrank Setup.exe
-          asset_content_type: application/octet-stream
-      
-      - name: Upload Ubuntu Version
-        if: matrix.os == 'ubuntu-latest'
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
-          asset_path: ./out/make/deb/x64/blitzcrank_${{ github.ref }}_amd64.deb
-          asset_name: Blitzcrank.deb
-          asset_content_type: application/octet-stream
-      
-      - name: Upload Fedora Version
-        if: matrix.os == 'ubuntu-latest'
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
-          asset_path: ./out/make/rpm/x64/blitzcrank-${{ github.ref }}-1.x86_64.rpm
-          asset_name: Blitzcrank.rpm
-          asset_content_type: application/octet-stream
-
-      - name: Upload MacOS Version
-        if: matrix.os == 'macos-latest'
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
-          asset_path: ./out/make/Blitzcrank.dmg
-          asset_name: Blitzcrank.dmg
-          asset_content_type: application/octet-stream
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          automatic_release_tag: latest
+          prerelease: false
+          title: v${{ github.ref }}
+          files: ./out/make/squirrel.windows/x64/*.exe
