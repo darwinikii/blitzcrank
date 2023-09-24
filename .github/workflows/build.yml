@@ -3,7 +3,7 @@ name: Build/release
 on:
   push:
     tags:
-    - 'v*'
+    - '*'
 
 jobs:
   release:
@@ -83,8 +83,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
-          asset_path: ${{ steps.deb-upload.outputs.path }}
-          asset_name: Windows Setup
+          asset_path: ./out/make/squirrel.windows/x64/blitzcrank-${{ github.ref }} Setup.exe
+          asset_name: Blitzcrank Setup.exe
           asset_content_type: application/octet-stream
       
       - name: Upload Ubuntu Version
@@ -94,8 +94,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
-          asset_path: ${{ steps.deb-upload.outputs.path }}
-          asset_name: Ubuntu Setup
+          asset_path: ./out/make/deb/x64/blitzcrank_${{ github.ref }}_amd64.deb
+          asset_name: Blitzcrank.deb
           asset_content_type: application/octet-stream
       
       - name: Upload Fedora Version
@@ -105,8 +105,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
-          asset_path: ${{ steps.rpm-upload.outputs.path }}
-          asset_name: Fedora Setup
+          asset_path: ./out/make/rpm/x64/blitzcrank-${{ github.ref }}-1.x86_64.rpm
+          asset_name: Blitzcrank.rpm
           asset_content_type: application/octet-stream
 
       - name: Upload MacOS Version
@@ -117,5 +117,5 @@ jobs:
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
           asset_path: ./out/make/Blitzcrank.dmg
-          asset_name: MacOS Setup
+          asset_name: Blitzcrank.dmg
           asset_content_type: application/octet-stream
