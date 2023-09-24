@@ -42,6 +42,7 @@ jobs:
 
       - name: Upload Artifacts for Ubuntu
         if: matrix.os == 'ubuntu-latest'
+        id: deb-upload
         uses: actions/upload-artifact@v3
         with:
           name: Linux
@@ -49,6 +50,7 @@ jobs:
       
       - name: Upload Artifacts for Fedora
         if: matrix.os == 'ubuntu-latest'
+        id: rpm-upload
         uses: actions/upload-artifact@v3
         with:
           name: Linux
@@ -90,7 +92,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
-          asset_path: ./out/make/deb/x64/*.deb
+          asset_path: ${{ steps.deb-upload.outputs[0].path }}
           asset_name: Ubuntu Setup
           asset_content_type: application/octet-stream
       
@@ -101,7 +103,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
-          asset_path: ./out/make/rpm/x64/*.rpm
+          asset_path: ${{ steps.rpm-upload.outputs[0].path }}
           asset_name: Fedora Setup
           asset_content_type: application/octet-stream
 
@@ -112,6 +114,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
-          asset_path: ./out/make/*.dmg
+          asset_path: ./out/make/Blitzcrank.dmg
           asset_name: MacOS Setup
           asset_content_type: application/octet-stream
