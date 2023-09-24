@@ -371,7 +371,7 @@ const createWindow = async () => {
     height: 400,
     maximizable: false,
     resizable: false,
-    frame: true,
+    frame: false,
     titleBarStyle: "hidden",
     icon: defaultPath("icons/1024x1024.png"),
     webPreferences: {
