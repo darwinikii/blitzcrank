@@ -3,7 +3,7 @@ name: Build/release
 on:
   push:
     tags:
-    - '*'
+    - 'v*'
 
 jobs:
   release:
@@ -35,7 +35,6 @@ jobs:
 
       - name: Upload Artifacts for Windows
         if: matrix.os == 'windows-latest'
-        id: exe-upload
         uses: actions/upload-artifact@v3
         with:
           name: Windows
@@ -43,64 +42,21 @@ jobs:
 
       - name: Upload Artifacts for Ubuntu
         if: matrix.os == 'ubuntu-latest'
-        id: deb-upload
         uses: actions/upload-artifact@v3
         with:
-          name: Linux
+          name: Ubuntu
           path: ./out/make/deb/x64/*.deb
       
       - name: Upload Artifacts for Fedora
         if: matrix.os == 'ubuntu-latest'
-        id: rpm-upload
         uses: actions/upload-artifact@v3
         with:
-          name: Linux
+          name: Fedora
           path: ./out/make/rpm/x64/*.rpm
 
       - name: Upload Artifacts for MacOS
         if: matrix.os == 'macos-latest'
-        id: dmg-upload
         uses: actions/upload-artifact@v3
         with:
           name: MacOS
           path: ./out/make/*.dmg
-
-      - name: Upload MacOS Version
-        uses: marvinpinto/action-automatic-releases@latest
-        if: matrix.os == 'macos-latest'
-        with:
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
-          automatic_release_tag: latest
-          prerelease: false
-          title: v${{ github.ref }}
-          files: ./out/make/*.dmg
-
-      - name: Upload Fedora Version
-        uses: marvinpinto/action-automatic-releases@latest
-        if: matrix.os == 'ubuntu-latest'
-        with:
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
-          automatic_release_tag: latest
-          prerelease: false
-          title: v${{ github.ref }}
-          files: ./out/make/rpm/x64/*.rpm
-
-      - name: Upload Ubuntu Version
-        uses: marvinpinto/action-automatic-releases@latest
-        if: matrix.os == 'ubuntu-latest'
-        with:
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
-          automatic_release_tag: latest
-          prerelease: false
-          title: v${{ github.ref }}
-          files: ./out/make/deb/x64/*.deb
-
-      - name: Upload Windows Version
-        uses: marvinpinto/action-automatic-releases@latest
-        if: matrix.os == 'windows-latest'
-        with:
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
-          automatic_release_tag: latest
-          prerelease: false
-          title: v${{ github.ref }}
-          files: ./out/make/squirrel.windows/x64/*.exe
