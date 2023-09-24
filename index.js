@@ -132,6 +132,14 @@ const mainThread = setIntervalAsync(async () => {
   var state = JSON.parse(await request('/lol-gameflow/v1/gameflow-phase', "GET", credentials))
   console.log(state)
 
+//  (async () => {
+//    var summoner = JSON.parse(await request('/lol-summoner/v1/current-summoner', "GET", credentials))
+//    console.log(summoner)
+//    if (!summoner.errorCode && summoner.displayName) {
+//      window.webContents.send("playerIcon", summoner)
+//    }
+//  })()
+
   if (state == "None") {
     if (store.get("inviteaccept") == true) {
       var invites = JSON.parse(await request('/lol-lobby/v2/received-invitations/', "GET", credentials))
@@ -216,10 +224,12 @@ const mainThread = setIntervalAsync(async () => {
             })
             if (selectionStatus.championId == selectList[0].id || newAction.championId == selectList[0].id) {
               await request("/lol-champ-select/v1/session/actions/" + action.id + "/complete", "POST", credentials)
-              continue
+              return
             } 
             else selectList.shift()
           }
+
+
 
           return
 
