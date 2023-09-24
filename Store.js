@@ -7,10 +7,12 @@ class Store {
     const userDataPath = (electron.app || electron.remote.app).getPath('userData');
     this.path = path.join(userDataPath, opts.configName + '.json');
     this.data = parseDataFile(this.path, opts.defaults);
+    this.opts = opts
   }
 
   get(key) {
-    return this.data[key];
+    if (this.data[key] == undefined) return this.opts.defaults[key]
+    else return this.data[key]
   }
 
   set(key, val) {
@@ -26,7 +28,11 @@ class Store {
 
 function parseDataFile(filePath, defaults) {
   try {
-    return JSON.parse(fs.readFileSync(filePath));
+    var readedData = JSON.parse(fs.readFileSync(filePath));
+    Object.keys(defaults).forEach(e => {
+      if (!readedData[e]) readedData[e] = defaults[e]
+    })
+    return readedData
   } catch(error) {
     return defaults;
   }

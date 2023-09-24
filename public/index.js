@@ -1,3 +1,4 @@
+const sleep = (ms) => new Promise((resolve, reject) => setTimeout(resolve, ms))
 const { ipcRenderer } = require("electron")
 
 var ver = "13.18.1"
@@ -33,14 +34,25 @@ window.onload = () => {
     ipcRenderer.invoke('reqData', "").then((result) => {
         if (result.companion == true) {
             ipcRenderer.invoke('hexIP', "").then((result) => {
-                if (result != 100100) document.getElementById("hexcode").innerHTML = "Companion App [Code: " + result + "]"
-                else document.getElementById("hexcode").innerHTML = "Companion App"
+                document.getElementById("hexcode").innerHTML = "Companion App"
+                if (result.local != 100100) document.getElementById("hexcode").innerHTML += " [Local: " + result.local + "]" 
+                if (result.global != null) document.getElementById("hexcode").innerHTML += " [Global: " + result.global + "]"
             })
         }
     })
 
     ipcRenderer.send("run");
 }
+
+ipcRenderer.on("hexIP", (event, data) => {
+    ipcRenderer.invoke('reqData', "").then((result) => {
+        if (result.companion == true) {
+            document.getElementById("hexcode").innerHTML = "Companion App"
+            if (data.local != 100100) document.getElementById("hexcode").innerHTML += " [Local: " + data.local + "]" 
+            if (data.global != null) document.getElementById("hexcode").innerHTML += " [Global: " + data.global + "]"
+        }
+    })
+});
 
 ipcRenderer.on("sync", (event, data) => {
     document.getElementById("readycheck").checked = data.readycheck
@@ -69,12 +81,6 @@ ipcRenderer.on("sync", (event, data) => {
     characterChangeImage(document.getElementsByClassName("characterBanner")[1], false)
     characterChangeImage(document.getElementsByClassName("characterBanner")[2], false)
     document.getElementById("companionSwitch").checked = data.companion
-    if (data.companion == true) {
-        ipcRenderer.invoke('hexIP', "").then((result) => {
-            if (result != 100100) document.getElementById("hexcode").innerHTML = "Companion App [Code: " + result + "]"
-            else document.getElementById("hexcode").innerHTML = "Companion App"
-        })
-    }
 
     console.log("Sync completed from main server : ")
     console.log(data)
@@ -125,10 +131,12 @@ function datachange() {
 }
 
 function switchCompanion(e) {
+    e.setAttribute("disabled", false)
     if (e.checked == true) {
         ipcRenderer.invoke('hexIP', "").then((result) => {
-            if (result != 100100) document.getElementById("hexcode").innerHTML = "Companion App [Code: " + result + "]"
-            else document.getElementById("hexcode").innerHTML = "Companion App"
+            document.getElementById("hexcode").innerHTML = "Companion App"
+            if (result.local != 100100) document.getElementById("hexcode").innerHTML += " [Local: " + result.local + "]" 
+            if (result.global != null) document.getElementById("hexcode").innerHTML += " [Global: " + result.global + "]"
         })
 
         datachange()
@@ -136,6 +144,9 @@ function switchCompanion(e) {
         document.getElementById("hexcode").innerHTML = "Companion App"
         datachange()
     }
+    sleep(1000).then(() => {
+        e.removeAttribute('disabled')
+    })
 }
 
 function characterChangeImage(e, type) {

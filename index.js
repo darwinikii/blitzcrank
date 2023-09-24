@@ -1,6 +1,7 @@
 const { setIntervalAsync, clearIntervalAsync } = require('set-interval-async');
 const { authenticate, createWebSocketConnection } = require('league-connect');
 const { app, BrowserWindow, ipcMain, Menu, Tray } = require('electron');
+const localtunnel = require('localtunnel');
 const bodyParser = require('body-parser');
 const fetch = require('node-fetch');
 const Store = require('./Store.js');
@@ -19,10 +20,8 @@ const defaultPath = (args) => path.join(app.getAppPath("app"), args)
 const exp = express()
 exp.use(bodyParser.urlencoded({ extended: true }));
 exp.use(express.json());
-var expListener = exp.listen(3131)
-expListener.close()
 
-var credentials, window
+var credentials, window, tunnel
 var gameVersion, champIds = { nameToId: {}, idToName: {}, champs: [] }
 
 const store = new Store({
@@ -67,7 +66,8 @@ const store = new Store({
       }
     ] },
     inTray: false,
-    companion: false
+    companion: false,
+    port: 3131,
   }
 })
 
@@ -344,18 +344,22 @@ const mainThread = setIntervalAsync(async () => {
 }, 3000)
 
 exp.get('/testConnection', (req, res) => {
-  res.send({ status: "OK" })
+  if (store.get("companion") == false) return res.status(404).send('404');
+  res.send({ status: "OK", localtunnel: !tunnel.clientId ? "NaN" : parseInt(tunnel.clientId).toString(16) })
 })
 
 exp.get('/getData', (req, res) => {
+  if (store.get("companion") == false) return res.status(404).send('404');
   res.send(store.data)
 })
 
 exp.get('/getChamps', (req, res) => {
+  if (store.get("companion") == false) return res.status(404).send('404');
   res.send({ champs: champIds.champs, ver: gameVersion })
 })
 
 exp.post('/setData', (req, res) => {
+  if (store.get("companion") == false) return res.status(404).send('404');
   console.log(req.body)
   window.webContents.send("sync", req.body)
   store.setAll(req.body)
@@ -385,7 +389,9 @@ const createWindow = async () => {
 
   ipcMain.on("run", async () => {
     win.webContents.send("sync", store.data)
-    if (store.data.companion == true) expListener = exp.listen(3131)
+    if (store.data.companion == true) {
+      tunnel = await createTunnel()
+    }
   });
 
   ipcMain.on("close", () => {
@@ -396,16 +402,16 @@ const createWindow = async () => {
     store.set("inTray", true)
   });
 
-  ipcMain.on("setData", (event, data) => {
+  ipcMain.on("setData", async (event, data) => {
     if (store.data.companion != data.companion) {
       if (data.companion == true) {
-        expListener = exp.listen(3131)
+        tunnel = await createTunnel()
       } else {
-        expListener.close()
+        tunnel.close()
       }
     }
     store.setAll(data)
-    console.log(data)
+    console.log(data) 
   });
 
   ipcMain.handle('reqData', async (event, args) => {
@@ -419,8 +425,10 @@ const createWindow = async () => {
   ipcMain.handle('hexIP', async (event, args) => {
     var ip = getUserIp()
     ip = ip == null ? "192.168.256.256" : ip
-    return ipToHex(ip)
+    return { local: ipToHex(ip) }
   })
+
+  //win.webContents.openDevTools()
 
   window = win
   clientConnector()
@@ -506,3 +514,32 @@ const request = async (path, method, _credentials, body) => {
     resolve(await req.text())
   })
 }
+
+const createTunnel = async() => {
+  var tempTunnel, isSuccess
+  while (!isSuccess) {
+    var randomNumber = Math.floor(Math.random() * 65535);
+
+    try {
+      tempTunnel = await localtunnel({ port: store.get("port"), subdomain: randomNumber });
+    } catch (e) {
+
+    }
+    
+    if (tempTunnel.clientId == randomNumber.toString()) isSuccess = true
+    console.log("Localtunnel port : " + tempTunnel.clientId)
+  }
+
+  var ip = getUserIp()
+  ip = ip == null ? "192.168.256.256" : ip
+  var globalIp = parseInt(tempTunnel.clientId).toString(16)
+  window.webContents.send("hexIP", { local: ipToHex(ip), global: globalIp == "NaN" ? null : globalIp })
+
+  return tempTunnel
+}
+
+process.on('uncaughtException', async (e) => {
+  console.log(e)
+});
+
+exp.listen(store.get("port"))
